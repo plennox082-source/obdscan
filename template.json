@@ -1,0 +1,22 @@
+{
+  "name": "Template (harmless examples)",
+  "notes": "Copy this file, rename it, and replace the steps with commands for your car. Steps can be AT commands or hex requests. 'header' sets ATSH (CAN request ID), 'rx' sets ATCRA (response filter). 'stop' commands run when you press Stop. Only add commands you have verified for your exact vehicle.",
+  "tests": [
+    {
+      "title": "Tester Present ping (engine ECU)",
+      "warning": "Harmless. Sends UDS TesterPresent to the engine ECU (7E0). Only works on cars that use UDS over CAN.",
+      "header": "7E0",
+      "rx": "7E8",
+      "steps": ["3E00"],
+      "stop": []
+    },
+    {
+      "title": "Read VIN (mode 09)",
+      "warning": "Harmless read-only request.",
+      "header": "7DF",
+      "rx": "",
+      "steps": ["0902"],
+      "stop": []
+    }
+  ]
+}
