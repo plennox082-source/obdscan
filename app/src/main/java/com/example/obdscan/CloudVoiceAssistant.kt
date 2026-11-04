@@ -116,15 +116,7 @@ fun CloudVoiceAssistant() {
                                             answer = reply
                                             crewComments = banter
                                             status = "Pat and the crew are done"
-                                            if (ttsReady) {
-                                                val spokenReply = buildString {
-                                                    append("Pat says: ").append(reply)
-                                                    banter.forEach { (name, comment) ->
-                                                        append(". ").append(name).append(" says: ").append(comment)
-                                                    }
-                                                }
-                                                tts.speak(spokenReply, TextToSpeech.QUEUE_FLUSH, null, "pat_and_crew_reply")
-                                            }
+                                            if (ttsReady) tts.speak(buildSpokenResponse(reply, banter), TextToSpeech.QUEUE_FLUSH, null, "pat_and_crew_reply")
                                         } catch (e: Exception) {
                                             answer = e.message ?: "Could not reach the Worker. Check the URL and connection."
                                             crewComments = emptyList()
@@ -141,23 +133,15 @@ fun CloudVoiceAssistant() {
                     Text("Pat's response", style = MaterialTheme.typography.labelSmall)
                     Text(answer, style = MaterialTheme.typography.bodyMedium)
                     if (crewComments.isNotEmpty()) {
-                        Text("The crew's unfiltered (but friendly) side comments", style = MaterialTheme.typography.labelMedium)
+                        Text("Adam, Steve, and Jesse", style = MaterialTheme.typography.labelMedium)
                         crewComments.forEach { (name, comment) ->
                             Text("$name: $comment", style = MaterialTheme.typography.bodySmall)
                         }
                     }
                     if (ttsReady) {
-                        OutlinedButton(
-                            onClick = {
-                                val spokenReply = buildString {
-                                    append("Pat says: ").append(answer)
-                                    crewComments.forEach { (name, comment) ->
-                                        append(". ").append(name).append(" says: ").append(comment)
-                                    }
-                                }
-                                if (answer.isNotBlank()) tts.speak(spokenReply, TextToSpeech.QUEUE_FLUSH, null, "pat_and_crew_reply")
-                            }
-                        ) { Text("Read response and crew comments aloud") }
+                        OutlinedButton(onClick = {
+                            if (answer.isNotBlank()) tts.speak(buildSpokenResponse(answer, crewComments), TextToSpeech.QUEUE_FLUSH, null, "pat_and_crew_reply")
+                        }) { Text("Read response and crew comments aloud") }
                     }
                 }
             },
@@ -166,22 +150,27 @@ fun CloudVoiceAssistant() {
     }
 }
 
-/** Local scripted banter; the Worker is still the only remotely contacted assistant. */
+private fun buildSpokenResponse(reply: String, comments: List<Pair<String, String>>): String = buildString {
+    append("Pat says: ").append(reply)
+    comments.forEach { (name, comment) -> append(". ").append(name).append(" says: ").append(comment) }
+}
+
+/** Each crew member gets a fresh, randomly selected supportive line after Pat answers. */
 private fun makeCrewBanter(): List<Pair<String, String>> = listOf(
     "Adam" to listOf(
-        "Pat, that answer was almost as smooth as a fresh oil change. Almost.",
-        "Good call, Pat. I was about to explain it politely for the next three hours.",
-        "Pat's got this. Somebody make sure he doesn't start charging by the syllable."
+        "Nice one, Pat. Clear and to the point.",
+        "Good work, Pat. That explanation was easy to follow.",
+        "Solid answer, Pat. The crew is on the same page."
     ).random(),
     "Steve" to listOf(
-        "Well I'll be, Pat actually found the answer before I finished my coffee.",
-        "That's a solid answer, Pat. Don't let it go to your head, you glorified socket wrench.",
-        "Pat nailed it. Now who moved my ten-millimeter socket?"
+        "Well I'll be, Pat got it sorted. Good job.",
+        "That's a useful answer, Pat. You earned the coffee break.",
+        "Good call, Pat. Let's get the right tools and check it out."
     ).random(),
     "Jesse" to listOf(
-        "Whoa, Pat cooked! Can we put that answer on a sticker or something?",
-        "Pat's answer is giving certified mechanic energy. I think. Probably.",
-        "Nice one, Pat! I had a follow-up question, but I forgot it halfway through asking."
+        "Nice, Pat! That makes sense now.",
+        "Pat came through with the answer. Teamwork for the win!",
+        "Great explanation, Pat. I actually remembered the whole thing."
     ).random()
 )
 
