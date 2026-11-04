@@ -15,7 +15,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stro ke
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
@@ -28,6 +28,7 @@ fun BackgroundSwitcher(content: @Composable () -> Unit) {
     Box(Modifier.fillMaxSize()) {
         if (useBidirectional) BidirectionalBackground() else CyberBackground()
         content()
+
         FloatingActionButton(
             onClick = {
                 useBidirectional = !useBidirectional
@@ -36,7 +37,10 @@ fun BackgroundSwitcher(content: @Composable () -> Unit) {
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 88.dp),
             containerColor = Color(0xFF241018),
             contentColor = Color.White
-        ) { Text(if (useBidirectional) "BG 2" else "BG 1") }
+        ) {
+            Text(if (useBidirectional) "BG 2" else "BG 1")
+        }
+
         MechanicAssistant()
     }
 }
@@ -49,7 +53,16 @@ fun BidirectionalBackground(modifier: Modifier = Modifier) {
         fun point(x: Float, y: Float) = Offset(x * sx, y * sy)
         fun box(width: Float, height: Float) = Size(width * sx, height * sy)
         fun strokeWidth(value: Float) = value * ((sx + sy) / 2f)
-        fun roundRect(color: Color, x: Float, y: Float, width: Float, height: Float, radius: Float, stroke: Float? = null) {
+
+        fun roundRect(
+            color: Color,
+            x: Float,
+            y: Float,
+            width: Float,
+            height: Float,
+            radius: Float,
+            stroke: Float? = null
+        ) {
             drawRoundRect(
                 color = color,
                 topLeft = point(x, y),
@@ -66,6 +79,7 @@ fun BidirectionalBackground(modifier: Modifier = Modifier) {
             drawLine(grid, Offset(x, 0f), Offset(x, size.height), strokeWidth(0.8f))
             x += (40f * sx).coerceAtLeast(1f)
         }
+
         var y = 0f
         while (y <= size.height) {
             drawLine(grid, Offset(0f, y), Offset(size.width, y), strokeWidth(0.8f))
@@ -78,17 +92,21 @@ fun BidirectionalBackground(modifier: Modifier = Modifier) {
         roundRect(red, 60f, 45f, 440f, 170f, 6f, 1.5f)
         roundRect(Color(0xFF031202), 700f, 45f, 440f, 170f, 6f)
         roundRect(lime, 700f, 45f, 440f, 170f, 6f, 1.5f)
+
         roundRect(Color(0xFF0A1F05), 390f, 105f, 80f, 24f, 12f)
         roundRect(lime, 432f, 107f, 36f, 20f, 10f)
         roundRect(Color(0xFF240207), 390f, 155f, 80f, 24f, 12f)
         roundRect(red, 392f, 157f, 36f, 20f, 10f)
+
         listOf(100f, 150f).forEach { row ->
             roundRect(Color(0xFF010801), 720f, row, 400f, 32f, 4f)
             roundRect(Color(0xFF1B4D10), 720f, row, 400f, 32f, 4f, 1f)
         }
+
         drawLine(red, point(500f, 130f), point(700f, 130f), strokeWidth(2f))
         drawCircle(red, strokeWidth(3f), point(500f, 130f))
         drawCircle(lime, strokeWidth(3f), point(700f, 130f))
+
         roundRect(Color(0xFF040001), 60f, 245f, 1080f, 120f, 4f)
         roundRect(Color(0xFF2B080F), 60f, 245f, 1080f, 120f, 4f, 1f)
         listOf(290f to red, 322f to lime, 350f to red).forEach { (row, color) ->
