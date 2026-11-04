@@ -19,7 +19,6 @@ import androidx.compose.ui.graphics.drawscope.Stro ke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
-/** Lets the user switch backgrounds and opens the mechanic helper on every app screen. */
 @Composable
 fun BackgroundSwitcher(content: @Composable () -> Unit) {
     val context = LocalContext.current
@@ -37,15 +36,11 @@ fun BackgroundSwitcher(content: @Composable () -> Unit) {
             modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 88.dp),
             containerColor = Color(0xFF241018),
             contentColor = Color.White
-        ) {
-            Text(if (useBidirectional) "BG 2" else "BG 1")
-        }
-        // This floating assistant is global, so it remains reachable from every tab.
+        ) { Text(if (useBidirectional) "BG 2" else "BG 1") }
         MechanicAssistant()
     }
 }
 
-/** Decorative cyberpunk backdrop based on the submitted bidirectional SVG. */
 @Composable
 fun BidirectionalBackground(modifier: Modifier = Modifier) {
     Canvas(modifier = modifier.fillMaxSize()) {
@@ -83,24 +78,17 @@ fun BidirectionalBackground(modifier: Modifier = Modifier) {
         roundRect(red, 60f, 45f, 440f, 170f, 6f, 1.5f)
         roundRect(Color(0xFF031202), 700f, 45f, 440f, 170f, 6f)
         roundRect(lime, 700f, 45f, 440f, 170f, 6f, 1.5f)
-
-        // Function toggles, shown as decorative on/off switches.
         roundRect(Color(0xFF0A1F05), 390f, 105f, 80f, 24f, 12f)
         roundRect(lime, 432f, 107f, 36f, 20f, 10f)
         roundRect(Color(0xFF240207), 390f, 155f, 80f, 24f, 12f)
         roundRect(red, 392f, 157f, 36f, 20f, 10f)
-
-        // Command interface rows.
         listOf(100f, 150f).forEach { row ->
             roundRect(Color(0xFF010801), 720f, row, 400f, 32f, 4f)
             roundRect(Color(0xFF1B4D10), 720f, row, 400f, 32f, 4f, 1f)
         }
-
         drawLine(red, point(500f, 130f), point(700f, 130f), strokeWidth(2f))
         drawCircle(red, strokeWidth(3f), point(500f, 130f))
         drawCircle(lime, strokeWidth(3f), point(700f, 130f))
-
-        // Raw hex terminal panel and colored data-stream rows.
         roundRect(Color(0xFF040001), 60f, 245f, 1080f, 120f, 4f)
         roundRect(Color(0xFF2B080F), 60f, 245f, 1080f, 120f, 4f, 1f)
         listOf(290f to red, 322f to lime, 350f to red).forEach { (row, color) ->
