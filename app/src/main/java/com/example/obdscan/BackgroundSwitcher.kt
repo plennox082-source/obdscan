@@ -42,6 +42,7 @@ fun BackgroundSwitcher(content: @Composable () -> Unit) {
         }
 
         MechanicAssistant()
+        CloudVoiceAssistant()
     }
 }
 
