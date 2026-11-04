@@ -15,11 +15,11 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.Stro ke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
-/** Lets the user switch between the original and bidirectional app backgrounds. */
+/** Lets the user switch backgrounds and opens the mechanic helper on every app screen. */
 @Composable
 fun BackgroundSwitcher(content: @Composable () -> Unit) {
     val context = LocalContext.current
@@ -40,6 +40,8 @@ fun BackgroundSwitcher(content: @Composable () -> Unit) {
         ) {
             Text(if (useBidirectional) "BG 2" else "BG 1")
         }
+        // This floating assistant is global, so it remains reachable from every tab.
+        MechanicAssistant()
     }
 }
 
@@ -50,14 +52,13 @@ fun BidirectionalBackground(modifier: Modifier = Modifier) {
         val sx = size.width / 1200f
         val sy = size.height / 400f
         fun point(x: Float, y: Float) = Offset(x * sx, y * sy)
-        fun box(x: Float, y: Float, width: Float, height: Float) =
-            Size(width * sx, height * sy)
+        fun box(width: Float, height: Float) = Size(width * sx, height * sy)
         fun strokeWidth(value: Float) = value * ((sx + sy) / 2f)
         fun roundRect(color: Color, x: Float, y: Float, width: Float, height: Float, radius: Float, stroke: Float? = null) {
             drawRoundRect(
                 color = color,
                 topLeft = point(x, y),
-                size = box(x, y, width, height),
+                size = box(width, height),
                 cornerRadius = CornerRadius(radius * sx, radius * sy),
                 style = stroke?.let { Stroke(strokeWidth(it)) } ?: androidx.compose.ui.graphics.drawscope.Fill
             )
