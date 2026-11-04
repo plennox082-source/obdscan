@@ -19,7 +19,6 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.Locale
 
 /** Tap-to-talk Cloudflare voice assistant. The user supplies their deployed Worker URL. */
 @Composable
@@ -30,6 +29,7 @@ fun CloudVoiceAssistant() {
     var workerUrl by remember { mutableStateOf("") }
     var prompt by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf("Tap the microphone or type a question for Pat.") }
+    var crewComments by remember { mutableStateOf(emptyList<Pair<String, String>>()) }
     var status by remember { mutableStateOf("Ready") }
     var busy by remember { mutableStateOf(false) }
     var ttsReady by remember { mutableStateOf(false) }
@@ -108,14 +108,26 @@ fun CloudVoiceAssistant() {
                                     busy = true
                                     status = "Pat is thinking…"
                                     answer = "Connecting to Cloudflare…"
+                                    crewComments = emptyList()
                                     scope.launch {
                                         try {
                                             val reply = withContext(Dispatchers.IO) { requestWorker(endpoint, question) }
+                                            val banter = makeCrewBanter()
                                             answer = reply
-                                            status = "Pat is speaking"
-                                            if (ttsReady) tts.speak(reply, TextToSpeech.QUEUE_FLUSH, null, "pat_reply")
+                                            crewComments = banter
+                                            status = "Pat and the crew are done"
+                                            if (ttsReady) {
+                                                val spokenReply = buildString {
+                                                    append("Pat says: ").append(reply)
+                                                    banter.forEach { (name, comment) ->
+                                                        append(". ").append(name).append(" says: ").append(comment)
+                                                    }
+                                                }
+                                                tts.speak(spokenReply, TextToSpeech.QUEUE_FLUSH, null, "pat_and_crew_reply")
+                                            }
                                         } catch (e: Exception) {
                                             answer = e.message ?: "Could not reach the Worker. Check the URL and connection."
+                                            crewComments = emptyList()
                                             status = "Request failed"
                                         } finally {
                                             busy = false
@@ -128,10 +140,24 @@ fun CloudVoiceAssistant() {
                     Text("Status: $status", style = MaterialTheme.typography.labelMedium)
                     Text("Pat's response", style = MaterialTheme.typography.labelSmall)
                     Text(answer, style = MaterialTheme.typography.bodyMedium)
-                    if (ttsReady) {
-                        OutlinedButton(onClick = { if (answer.isNotBlank()) tts.speak(answer, TextToSpeech.QUEUE_FLUSH, null, "pat_reply") }) {
-                            Text("Read response aloud")
+                    if (crewComments.isNotEmpty()) {
+                        Text("The crew's unfiltered (but friendly) side comments", style = MaterialTheme.typography.labelMedium)
+                        crewComments.forEach { (name, comment) ->
+                            Text("$name: $comment", style = MaterialTheme.typography.bodySmall)
                         }
+                    }
+                    if (ttsReady) {
+                        OutlinedButton(
+                            onClick = {
+                                val spokenReply = buildString {
+                                    append("Pat says: ").append(answer)
+                                    crewComments.forEach { (name, comment) ->
+                                        append(". ").append(name).append(" says: ").append(comment)
+                                    }
+                                }
+                                if (answer.isNotBlank()) tts.speak(spokenReply, TextToSpeech.QUEUE_FLUSH, null, "pat_and_crew_reply")
+                            }
+                        ) { Text("Read response and crew comments aloud") }
                     }
                 }
             },
@@ -139,6 +165,25 @@ fun CloudVoiceAssistant() {
         )
     }
 }
+
+/** Local scripted banter; the Worker is still the only remotely contacted assistant. */
+private fun makeCrewBanter(): List<Pair<String, String>> = listOf(
+    "Adam" to listOf(
+        "Pat, that answer was almost as smooth as a fresh oil change. Almost.",
+        "Good call, Pat. I was about to explain it politely for the next three hours.",
+        "Pat's got this. Somebody make sure he doesn't start charging by the syllable."
+    ).random(),
+    "Steve" to listOf(
+        "Well I'll be, Pat actually found the answer before I finished my coffee.",
+        "That's a solid answer, Pat. Don't let it go to your head, you glorified socket wrench.",
+        "Pat nailed it. Now who moved my ten-millimeter socket?"
+    ).random(),
+    "Jesse" to listOf(
+        "Whoa, Pat cooked! Can we put that answer on a sticker or something?",
+        "Pat's answer is giving certified mechanic energy. I think. Probably.",
+        "Nice one, Pat! I had a follow-up question, but I forgot it halfway through asking."
+    ).random()
+)
 
 private fun requestWorker(endpoint: String, prompt: String): String {
     val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
