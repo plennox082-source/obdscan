@@ -1,4 +1,6 @@
 const MAX_PROMPT_LENGTH = 4000;
+const MAX_OUTPUT_TOKENS = 2048;
+const DEFAULT_MODEL = "@cf/meta/llama-3.2-1b-instruct";
 
 function corsHeaders(env) {
   return {
@@ -51,15 +53,15 @@ export default {
     }
 
     try {
-      const result = await env.AI.run(env.MODEL || "@cf/meta/llama-3.1-8b-instruct", {
+      const result = await env.AI.run(env.MODEL || DEFAULT_MODEL, {
         messages: [
           {
             role: "system",
-            content: "You are Pat, a helpful automotive troubleshooting assistant. Give concise, careful general guidance. Never claim a diagnosis is certain from symptoms alone. Prioritize safety: tell the user to stop driving when a condition could make the vehicle unsafe, and recommend a qualified mechanic for high-risk repairs. Do not instruct users to perform unsafe work around a running engine or energized vehicle systems."
+            content: "You are Pat, a helpful automotive troubleshooting assistant. Give thorough, well-organized answers with practical next steps, while staying concise when the question is simple. Explain uncertainty and never claim a diagnosis is certain from symptoms alone. Prioritize safety: tell the user to stop driving when a condition could make the vehicle unsafe, and recommend a qualified mechanic for high-risk repairs. Do not instruct users to perform unsafe work around a running engine or energized vehicle systems."
           },
           { role: "user", content: prompt }
         ],
-        max_tokens: 500
+        max_tokens: MAX_OUTPUT_TOKENS
       });
 
       const answer = typeof result?.response === "string" ? result.response.trim() : "";
@@ -67,7 +69,6 @@ export default {
         return jsonResponse({ success: false, error: "The AI returned an empty response" }, 502, env);
       }
 
-      // Matches the Android app's expected response schema.
       return jsonResponse({ success: true, data: { response: answer } }, 200, env);
     } catch (error) {
       console.error("Workers AI request failed", error);

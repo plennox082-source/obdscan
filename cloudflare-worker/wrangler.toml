@@ -6,6 +6,7 @@ compatibility_date = "2025-01-01"
 binding = "AI"
 
 [vars]
-MODEL = "@cf/meta/llama-3.1-8b-instruct"
+# Smaller model chosen to help stretch the account's free daily Workers AI allowance.
+MODEL = "@cf/meta/llama-3.2-1b-instruct"
 # For a website client, replace * with your site's origin. The native Android app does not use browser CORS.
 CORS_ORIGIN = "*"
