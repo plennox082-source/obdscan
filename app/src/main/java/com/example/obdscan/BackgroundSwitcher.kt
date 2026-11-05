@@ -1,5 +1,11 @@
 package com.example.obdscan
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
@@ -25,6 +31,17 @@ fun BackgroundSwitcher(content: @Composable () -> Unit) {
 
 @Composable
 private fun CircuitBoardBackground() {
+    val transition = rememberInfiniteTransition(label = "circuitLights")
+    val lightProgress = transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 3200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "lightProgress"
+    )
+
     Canvas(Modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
@@ -47,26 +64,81 @@ private fun CircuitBoardBackground() {
             y += step
         }
 
-        // Circuit traces run around the central display area, keeping the foreground readable.
-        for (i in 0..7) {
+        // Fixed circuit traces provide the tracks for the traveling light pulses.
+        val routes = (0..7).map { i ->
             val startY = h * (0.10f + i * 0.105f)
             val direction = if (i % 2 == 0) 1f else -1f
             val startX = if (direction > 0) 0f else w
             val endX = if (direction > 0) w * 0.28f else w * 0.72f
+            listOf(
+                Offset(startX, startY),
+                Offset(startX + direction * w * 0.12f, startY),
+                Offset(startX + direction * w * 0.18f, startY + h * 0.05f),
+                Offset(endX, startY + h * 0.05f)
+            )
+        }
+        routes.forEachIndexed { index, points ->
             val path = Path().apply {
-                moveTo(startX, startY)
-                lineTo(startX + direction * w * 0.12f, startY)
-                lineTo(startX + direction * w * 0.18f, startY + h * 0.05f)
-                lineTo(endX, startY + h * 0.05f)
+                moveTo(points.first().x, points.first().y)
+                points.drop(1).forEach { lineTo(it.x, it.y) }
             }
-            val accent = if (i % 3 == 0) cyan else traceGlow
-            drawPath(path, accent.copy(alpha = 0.13f), style = Stroke(width = 9f))
-            drawPath(path, accent.copy(alpha = 0.52f), style = Stroke(width = 2.5f))
-            drawCircle(accent.copy(alpha = 0.18f), radius = 9f, center = Offset(endX, startY + h * 0.05f))
-            drawCircle(accent.copy(alpha = 0.8f), radius = 3f, center = Offset(endX, startY + h * 0.05f))
+            val accent = if (index % 3 == 0) cyan else traceGlow
+            drawPath(path, accent.copy(alpha = 0.10f), style = Stroke(width = 9f))
+            drawPath(path, accent.copy(alpha = 0.43f), style = Stroke(width = 2.5f))
         }
 
-        // Fine angular traces, pads, and board-edge accents.
+        // Additional routes carry pulses in several directions across the display.
+        val multiDirectionRoutes = listOf(
+            listOf(Offset(0f, h * 0.22f), Offset(w * 0.18f, h * 0.22f), Offset(w * 0.24f, h * 0.28f), Offset(w * 0.48f, h * 0.28f)),
+            listOf(Offset(w, h * 0.34f), Offset(w * 0.82f, h * 0.34f), Offset(w * 0.76f, h * 0.40f), Offset(w * 0.54f, h * 0.40f)),
+            listOf(Offset(0f, h * 0.76f), Offset(w * 0.15f, h * 0.76f), Offset(w * 0.21f, h * 0.70f), Offset(w * 0.46f, h * 0.70f)),
+            listOf(Offset(w, h * 0.84f), Offset(w * 0.83f, h * 0.84f), Offset(w * 0.77f, h * 0.78f), Offset(w * 0.53f, h * 0.78f)),
+            listOf(Offset(w * 0.16f, 0f), Offset(w * 0.16f, h * 0.16f), Offset(w * 0.22f, h * 0.22f), Offset(w * 0.22f, h * 0.34f)),
+            listOf(Offset(w * 0.84f, h), Offset(w * 0.84f, h * 0.86f), Offset(w * 0.78f, h * 0.80f), Offset(w * 0.78f, h * 0.68f)),
+            listOf(Offset(w * 0.34f, 0f), Offset(w * 0.34f, h * 0.12f), Offset(w * 0.40f, h * 0.18f), Offset(w * 0.40f, h * 0.29f)),
+            listOf(Offset(w * 0.66f, h), Offset(w * 0.66f, h * 0.88f), Offset(w * 0.60f, h * 0.82f), Offset(w * 0.60f, h * 0.71f))
+        )
+
+        fun positionAlong(points: List<Offset>, progress: Float): Offset {
+            val lengths = points.zipWithNext { a, b -> (b - a).getDistance() }
+            val totalLength = lengths.sum().coerceAtLeast(1f)
+            var distance = progress.coerceIn(0f, 1f) * totalLength
+            for (i in lengths.indices) {
+                if (distance <= lengths[i] || i == lengths.lastIndex) {
+                    val fraction = (distance / lengths[i].coerceAtLeast(1f)).coerceIn(0f, 1f)
+                    return Offset(
+                        points[i].x + (points[i + 1].x - points[i].x) * fraction,
+                        points[i].y + (points[i + 1].y - points[i].y) * fraction
+                    )
+                }
+                distance -= lengths[i]
+            }
+            return points.last()
+        }
+
+        multiDirectionRoutes.forEachIndexed { index, points ->
+            val path = Path().apply {
+                moveTo(points.first().x, points.first().y)
+                points.drop(1).forEach { lineTo(it.x, it.y) }
+            }
+            val accent = if (index % 2 == 0) cyan else orange
+            drawPath(path, accent.copy(alpha = 0.07f), style = Stroke(width = 8f))
+            drawPath(path, traceGlow.copy(alpha = 0.30f), style = Stroke(width = 2f))
+
+            val offset = (index * 0.137f) % 1f
+            val forward = index % 2 == 0
+            val rawProgress = (lightProgress.value + offset) % 1f
+            val progress = if (forward) rawProgress else 1f - rawProgress
+            val head = positionAlong(points, progress)
+            val tail = positionAlong(points, (progress - 0.10f).coerceAtLeast(0f))
+            drawLine(accent.copy(alpha = 0.35f), tail, head, strokeWidth = 13f)
+            drawLine(accent.copy(alpha = 0.95f), tail, head, strokeWidth = 4f)
+            drawCircle(accent.copy(alpha = 0.18f), radius = 15f, center = head)
+            drawCircle(accent.copy(alpha = 0.55f), radius = 8f, center = head)
+            drawCircle(Color.White.copy(alpha = 0.9f), radius = 3f, center = head)
+        }
+
+        // Fixed board-edge circuitry and solder pads.
         val sidePath = Path().apply {
             moveTo(0f, h * 0.31f); lineTo(w * 0.08f, h * 0.31f); lineTo(w * 0.12f, h * 0.36f)
             lineTo(w * 0.12f, h * 0.64f); lineTo(w * 0.07f, h * 0.69f); lineTo(0f, h * 0.69f)
@@ -80,7 +152,7 @@ private fun CircuitBoardBackground() {
             drawCircle(cyan.copy(alpha = 0.48f), 5f, Offset(w * 0.945f, padY), style = Stroke(width = 2f))
         }
 
-        // Restrained glass-like frame around the central diagnostic emblem.
+        // Glass-like frame around the central diagnostic emblem.
         val frameW = w * 0.78f
         val frameH = h * 0.42f
         val frameLeft = (w - frameW) / 2f
@@ -100,7 +172,7 @@ private fun CircuitBoardBackground() {
             style = Stroke(width = 1f)
         )
 
-        // Large translucent orange check-engine symbol, layered for a soft neon glow.
+        // Large translucent orange check-engine symbol.
         val scale = minOf(w / 720f, h / 740f)
         val iconW = 620f * scale
         val iconH = 310f * scale
@@ -134,9 +206,6 @@ private fun CircuitBoardBackground() {
         drawCircle(orange.copy(alpha = 0.78f), 8f * scale, Offset(left + 295f * scale, top + 265f * scale))
         drawCircle(orange.copy(alpha = 0.78f), 8f * scale, Offset(left + 375f * scale, top + 265f * scale))
 
-        // Subtle edge vignette gives the app a dashboard-screen finish.
-        drawRect(
-            Brush.horizontalGradient(listOf(Color(0x55000000), Color.Transparent, Color(0x55000000)))
-        )
+        drawRect(Brush.horizontalGradient(listOf(Color(0x55000000), Color.Transparent, Color(0x55000000))))
     }
 }
