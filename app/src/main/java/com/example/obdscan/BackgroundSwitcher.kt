@@ -41,7 +41,6 @@ fun BackgroundSwitcher(content: @Composable () -> Unit) {
             Text(if (useBidirectional) "BG 2" else "BG 1")
         }
 
-        MechanicAssistant()
         CloudVoiceAssistant()
     }
 }
