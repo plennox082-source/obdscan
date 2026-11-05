@@ -134,9 +134,10 @@ fun CloudVoiceAssistant() {
 
 private fun speakCrew(tts: TextToSpeech, lines: List<CrewLine>) {
     lines.forEachIndexed { index, line ->
+        // TextToSpeech uses the documented string keys for pitch and speaking rate.
         val settings = Bundle().apply {
-            putFloat(TextToSpeech.Engine.KEY_PARAM_PITCH, line.character.pitch)
-            putFloat(TextToSpeech.Engine.KEY_PARAM_RATE, line.character.rate)
+            putFloat("pitch", line.character.pitch)
+            putFloat("rate", line.character.rate)
         }
         tts.speak(
             "${line.character}: ${line.text}",
